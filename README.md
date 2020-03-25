@@ -20,4 +20,4 @@ URL: [https://arxiv.org/abs/2003.10667](https://arxiv.org/abs/2003.10667)<br>
 
 The initial state of the optimization is randomly defined. In our preprint, to avoid local minima of the cost function, we repeated the optimization algorithm several times with different initializations and the parameters showing the lowest cost function value were adopted. Please note that you run the optimization algorithm only once for quick results in this demo.
 
-![fig__regression_demo](https://user-images.githubusercontent.com/52347843/77525781-e99d3800-6ecc-11ea-9f8b-760772528f42.jpg)
+<img src="https://user-images.githubusercontent.com/52347843/77525781-e99d3800-6ecc-11ea-9f8b-760772528f42.jpg" width="400px">
