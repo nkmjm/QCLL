@@ -19,3 +19,5 @@ URL: [https://arxiv.org/abs/2003.10667](https://arxiv.org/abs/2003.10667)<br>
 * demo_classification.ipynb (QCLL on a classification task)<br>
 
 The initial state of the optimization is randomly defined. In our preprint, to avoid local minima of the cost function, we repeated the optimization algorithm several times with different initializations and the parameters showing the lowest cost function value were adopted. Please note that you run the optimization algorithm only once for quick results in this demo.
+
+
