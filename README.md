@@ -7,7 +7,8 @@ Quantum circuit-like learning (QCL) is a classical machine learning algorithm wi
 ### Citation
 If you use QCLL in your published work, please cite the following preprint :<br>
 Koide-Majima, N., Majima, K. (2020).<br>
-[“Quantum circuit-like learning: A fast and scalable classical machine-learning algorithm with similar performance to quantum circuit learning”](https://arxiv.org/abs/2003.10667)<br>
+“Quantum circuit-like learning: A fast and scalable classical machine-learning algorithm with similar performance to quantum circuit learning”<br>
+URL: [https://arxiv.org/abs/2003.10667](https://arxiv.org/abs/2003.10667)<br>
 
 ### Requirements
 * python 3
