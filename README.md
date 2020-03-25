@@ -1,7 +1,7 @@
 # Quantum-inspired Machine Learning
 
 ### Available methods
-* Quantum circuit-like learning
+* Quantum circuit-like learning<br>
 Quantum circuit-like learning (QCL) is a classical machine learning algorithm with similar properties, behavior, and performance to quantum circuit learning (QCL). While QCL can employ an exponentially high-dimensional Hilbert space as its feature space due to the use of a quantum circuit [1], QCLL uses the same Hilbert space with a low computational cost by a statistical technique known as count sketch [2]. 
 
 ### Citation
