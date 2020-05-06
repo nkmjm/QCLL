@@ -158,7 +158,7 @@ def predictY_kclass(thetas_and_a_and_b, inVs, Cs_V, Cs_Ws):
         else:
             prd_ys = np.concatenate([prd_ys, prd_y], axis=1)
             
-    return prd_ys, us
+    return prd_ys, np.array(us)
 
 def computeLoss(thetas_and_a_and_b, ys, inVs, Cs_V, Cs_Ws):
 
@@ -214,33 +214,89 @@ def computeGradient(thetas_and_a_and_b, ys, inVs, Cs_V, Cs_Ws):
 
 def softmax(Q):
     
-    out0 = math.exp(Q[0])/(math.exp(Q[0])+math.exp(Q[1]))
-    out1 = math.exp(Q[1])/(math.exp(Q[0])+math.exp(Q[1]))
-    out = [out0, out1] 
-    
-    return np.array(out)
-
-def softmax_cross_entropy_kclass(Q, ys):
-
-    log = []
-    for i in range(Q.shape[0]):
-        tQ = Q[i,:]
-        max_q = np.max(tQ)
-        E = np.exp(tQ - max_q)
-        t_out = E/np.sum(E)
-        log.append(np.log(t_out))
-    log = np.array(log)
-    out = -1* np.sum(ys* log)
-
-    return out
+    max_q = np.max(Q)
+    E = np.exp(Q - max_q)
+    t_out = E/np.sum(E)
+    return t_out
 
 def computeLoss_kclass(thetas_and_a_and_b, ys, inVs, Cs_V, Cs_Ws):
     
     prd_ys, _ = predictY_kclass(thetas_and_a_and_b, inVs, Cs_V, Cs_Ws)
-    loss = softmax_cross_entropy_kclass(prd_ys, ys)
-    print(loss)
+    nSample = prd_ys.shape[0]
+    pE = []
+    for i in range(nSample):
+        pE.append(softmax(prd_ys[i,:])) 
+    loss = (-1)* ys* np.log(pE) # loss: softmax cross entropy
+    print(np.sum(loss))
+    
+    return np.sum(loss)
 
-    return loss 
+def computeGradient_kclass(thetas_and_a_and_b, ys, inVs, Cs_V, Cs_Ws):
+    
+    # params
+    nClasses = len(Cs_Ws)
+    nOut = len(Cs_Ws[0])
+    nSamples = ys.shape[0]
+
+    prd_ys, us = predictY_kclass(thetas_and_a_and_b, inVs, Cs_V, Cs_Ws)
+
+    # probability
+    pE = []
+    for i in range(len(prd_ys)):
+        pE.append(softmax(prd_ys[i,:]))
+    gradBase = pE - ys # nSamples x nClasses
+
+    ### grad: a and b
+    
+    usum = np.sum(us**2, axis=2)
+    grad_a = np.sum(gradBase* usum.transpose(), axis=0) 
+    grad_b = np.sum(gradBase, axis=0)
+    
+    ### grad: thetas
+    
+    thetas = thetas_and_a_and_b[:-nClasses*2] # nClasses x (2: a and b)
+    nThetas = len(thetas)
+    
+    a_vec = []
+    for k in range(nClasses):
+        a_ind = 2*nClasses - 2*k
+        a_vec.append(thetas_and_a_and_b[len(thetas_and_a_and_b) - a_ind])
+    a_vec = np.reshape(np.squeeze(a_vec), nClasses, 1)
+    a_mat = numpy.matlib.repmat(a_vec, nSamples, 1)
+    
+    # Set csV
+    csV = []
+    for j in range(len(inVs)):
+        tVs = inVs[j]
+        csV.append(qiCountSketch(tVs, Cs_V))
+    csV = np.squeeze(csV) # sample x d
+    
+    # grad_theta
+    grad_theta = []
+    for i in range(len(thetas)):       
+        gradWs = makeW_for_grad(thetas, i)
+        # u_grad
+        for oi in range(nOut):
+            u_grad=[]
+            for k in range(nClasses):
+                csgradWs = np.squeeze(qiCountSketch(gradWs, Cs_Ws[k][oi]))
+                u_grad.append(np.dot(csgradWs, csV.transpose()))
+            u_grad = np.array(u_grad)
+            if oi == 0:
+                elm = np.squeeze(us[:, :, oi])* u_grad
+            else:
+                elm = elm + (np.squeeze(us[:, :, oi])* u_grad) # nClasses x nSamples
+        # grad_theta      
+        t_grad_theta = np.sum(gradBase* 2* a_mat* elm.transpose()) # gradBase: nSamples x nClasses
+        grad_theta.append(t_grad_theta)
+    
+    # grad
+    grad = grad_theta
+    for i in range(nClasses):
+        grad.append(grad_a[i])
+        grad.append(grad_b[i])
+    
+    return grad
 
 def computeProb_kclass(thetas_and_a_and_b, inVs, Cs_V, Cs_Ws):
     
@@ -250,9 +306,9 @@ def computeProb_kclass(thetas_and_a_and_b, inVs, Cs_V, Cs_Ws):
     prob = []
     for i in range(prd_ys.shape[0]):
         t_out = softmax(prd_ys[i,:])
-        prob.append(t_out)
-
+        prob.append(t_out)     
     return prob
+
 
 
 ###
@@ -327,7 +383,7 @@ class regression():
         # Set init_thetas for Ws
         init_thetas_and_a_and_b = list(math.pi* np.random.rand(nParams))
         init_thetas_and_a_and_b.append(1) # append a: scale
-        init_thetas_and_a_and_b.append(0) # append b
+        init_thetas_and_a_and_b.append(0) # append b: intercept
 
         # Optimization
         result = opt.minimize(computeLoss, init_thetas_and_a_and_b, args=(ys, inVs, Cs_V, Cs_Ws), jac=computeGradient, method='SLSQP', tol=10**(-5), options={'maxiter':100})
@@ -473,8 +529,8 @@ class classification():
             init_thetas_and_a_and_b.append(0) # append b
             
         # Optimization 
-        result = opt.minimize(computeLoss_kclass, init_thetas_and_a_and_b, args=(ys, inVs, Cs_V, Cs_Wss), method='Nelder-Mead') # maxiter=200
-        
+        result = opt.minimize(computeLoss_kclass, init_thetas_and_a_and_b, args=(ys, inVs, Cs_V, Cs_Wss), jac=computeGradient_kclass, method='SLSQP', tol=10**(-5), options={'maxiter':100})
+          
         # Out items 
         # count sketch
         self.Cs_V = Cs_V
